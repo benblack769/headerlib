@@ -1,9 +1,44 @@
 #pragma once
-template<typename ArrayType>
 struct Point{
 	int X;
 	int Y;
+	Point operator + (Point p){
+		return Point{X+p.X,Y+p.Y};
+	}
+	
+	Point operator - (Point p){
+		return Point{X-p.X,Y-p.Y};
+	}
+	
+	Point & operator += (Point p){
+		*this = Point{X+p.X,Y+p.Y};
+		return *this;
+	}
+	
+	Point & operator -= (Point p){
+		*this =  Point{X-p.X,Y-p.Y};
+		return *this;
+	}
+	
+	Point operator * (int scalar){
+		return Point{X*scalar,Y*scalar};
+	}
+	
+	Point operator / (int scalar){
+		return Point{X/scalar,Y/scalar};
+	}
+	
+	Point & operator *= (int scalar){
+		*this = Point{X*scalar,Y*scalar};
+		return *this;
+	}
+	
+	Point & operator /= (int scalar){
+		*this = Point{X/scalar,Y/scalar};
+		return *this;
+	}
 };
+template<typename ArrayType>
 class Array2d
 {
 public:
