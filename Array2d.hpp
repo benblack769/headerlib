@@ -44,19 +44,21 @@ class Array2d
 {
 public:
 	static constexpr size_t ArrSize = XSize*YSize;
-	std::array<ArrayType,ArrSize> Arr;
-	typedef Arr::iterator iterator;
+        using ArrTy = std::array<ArrayType,ArrSize>;
+        ArrTy Arr;
+        typedef ArrTy iterator;
 	//static version
 	Array2d(ArrayType InitVal){
 		Assign(InitVal);
 	}
-	Array2d() = default;
-	Array2d(void) = default;
+        Array2d() = default;
 	int size(){
 		return Arr.size();
 	}
 	void assign(ArrayType Val){
-		fill(begin(), end(), InitVal);
+            for(ArrayType & v  : Arr){
+                v = Val;
+            }
 	}
 	iterator begin(){
 		return Arr.begin();
