@@ -1,4 +1,5 @@
 #pragma once
+#include <array>
 struct Point{
 	int X;
 	int Y;
@@ -38,27 +39,23 @@ struct Point{
 		return *this;
 	}
 };
-template<typename ArrayType>
+template<typename ArrayType,size_t XSize,size_t YSize>
 class Array2d
 {
 public:
-	vector<ArrayType> Arr;
+	static constexpr size_t ArrSize = XSize*YSize;
+	std::array<ArrayType,ArrSize> Arr;
 	typedef Arr::iterator iterator;
-	int XSize;
 	//static version
-	Array2d(int InXSize,int InYSize,ArrayType InitVal){
-		XSize = InXSize;
-		Arr.resize(InXSize * InYSize);
-		Init(InitVal);
+	Array2d(ArrayType InitVal){
+		Assign(InitVal);
 	}
-	Array2d(Array2d & InArr){
-		*this = InArr;
-	}
+	Array2d() = default;
 	Array2d(void) = default;
-	int Size(){
+	int size(){
 		return Arr.size();
 	}
-	void Init(ArrayType InitVal){
+	void assign(ArrayType Val){
 		fill(begin(), end(), InitVal);
 	}
 	iterator begin(){
@@ -67,14 +64,10 @@ public:
 	iterator end(){
 		return Arr.end();
 	}
-	void operator = (Array2d & InArr){
-		Arr = InArr.Arr;
-		XSize = InArr.XSize;
-	}
 	ArrayType & operator [](Point & P){
-		return Arr[P.X * XSize + P.Y];
+		return Arr[P.Y*YSize + P.X];
 	}
-	ArrayType * operator[](int X){
-		return &Arr[X*XSize];
+	ArrayType * operator[](int Y){
+		return &Arr[Y*YSize];
 	}
 };
