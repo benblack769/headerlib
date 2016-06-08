@@ -65,8 +65,8 @@ template<int32_t MaxX,int32_t MaxY>
 class PointIter{
 public:
     PointIter(int xstart, int ystart, int xend, int yend){
-        XCap = std::min(xend + 1,MaxX);
-        YCap = std::min(yend + 1,MaxY);
+        XCap = std::min(xend,MaxX);
+        YCap = std::min(yend,MaxY);
 
         P.X = std::max(xstart,0);
         P.Y = std::max(ystart,0);
@@ -76,8 +76,8 @@ public:
     PointIter(Point Center, int Range):
         PointIter(Center.X - Range,
                       Center.Y - Range,
-                      Center.X + Range,
-                      Center.Y + Range){}
+                      Center.X + Range + 1,
+                      Center.Y + Range + 1){}
     PointIter():
         PointIter(0,0,MaxX,MaxY){}
 
