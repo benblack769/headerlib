@@ -1,3 +1,4 @@
+#pragma once
 /*template <typename IteratorB,typename IteratorE>
 void advance_all (IteratorB & begin,IteratorE & end) {
 	++begin;
@@ -6,7 +7,7 @@ template <typename IteratorB,typename IteratorE, typename ... Iterators>
 void advance_all (IteratorB & begin,IteratorE & end, Iterators& ... iterators){
 	++begin;
 	advance_all(iterators...);
-} 
+}
 template <typename IteratorB,typename IteratorE>
 bool compare_all (IteratorB & begin,IteratorE & end) {
 	begin != end;
@@ -19,7 +20,7 @@ template <typename Function, typename IteratorB,typename IteratorE, typename ...
 Function zip_for_each (Function func, IteratorB begin, IteratorE end, Iterators ... iterators){
 	for(;begin != end && compare_all(iterators...); ++begin, advance_all(iterators...))
 		func(*begin, *(iterators)... );
-	
+
 	return func;
 }
 template<typename Function,typename ContTy1,typename ContTy2>
@@ -52,9 +53,9 @@ int main(){
 	zip_for_each([](int & a_val,float b_val,char c_val){
 		cout << a_val << " " << b_val << " " << c_val << "\n";
 	},a.begin(),a.end(),b.rbegin(),b.rend(),c.begin(),c.end());
-	
+
 	cout << "\n";
-	
+
 	zip_range([](int & a_val,float b_val){
 		cout << a_val << " " << b_val << "\n";
 	},a,b);*/
@@ -72,15 +73,3 @@ int main(){
 
 	return 0;
 }
-
-
-
-
-
-
-
-
-
-
-
-

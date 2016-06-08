@@ -1,4 +1,5 @@
 //generators
+#pragma once
 #include <thread>
 #include <atomic>
 #define ShortSleep() std::this_thread::sleep_for(chrono::microseconds(1))
@@ -80,4 +81,3 @@ template<typename YeildType>
 GenIter<YeildType> Through(void GenFunc(generator<YeildType> *)){
 	return GenIter<YeildType>(new generator<YeildType>(GenFunc));
 }
-

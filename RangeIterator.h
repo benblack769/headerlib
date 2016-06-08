@@ -1,3 +1,4 @@
+#pragma once
 //range iterator for use in for loop
 //an "each" iterator that allows iteration with iterators
 //an "each" iterator that allows iteration with two iterators
@@ -27,7 +28,6 @@ for(pair<double *,double *> x : each(Vec.begin(),Vec.end(),Vec.rbegin(),Vec.rend
 	//iterates x.first 100 times through Vec forwards and x.second 100 times though Vec backwards
 }
 */
-#pragma once
 #include <utility>
 namespace RangeStuff{
 	template<typename Type>

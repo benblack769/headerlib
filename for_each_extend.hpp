@@ -1,3 +1,4 @@
+#pragma once
 template <typename ItTy1,typename ItTy2,typename Function>
 void for_each (ItTy1 begin1, ItTy1 end1, ItTy2 begin2, ItTy2 end2,Function func){
 	for (;begin1 != end1 && begin2 != end2; ++begin1,++begin2){

@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <initializer_list>
 #include <stdexcept>
+#include "point.hpp"
 
 template<typename Ty>
 class DArraySlice {
@@ -160,6 +161,9 @@ public:
 	}
 	DArraySlice<Ty> operator[](int Y) {
 		return DArraySlice<Ty>(Data.data() + Y*Height, Height);
+	}
+	Ty & operator[](Point P) {
+		return Data[P.Y*Height + P.X];
 	}
 	iterator begin() {
 		return iterator{ Data.data(), Height };
