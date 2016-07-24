@@ -12,7 +12,7 @@ public:
         typedef ArrTy iterator;
 	//static version
 	Array2d(ArrayType InitVal){
-		Assign(InitVal);
+		assign(InitVal);
 	}
         Array2d() = default;
 	int size(){
