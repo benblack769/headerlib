@@ -61,6 +61,14 @@ inline Point operator / (Point P1, NumType Mult){
     P1 /= Mult;
     return P1;
 }
+namespace std{
+    template<>
+    struct hash<Point>{
+        size_t operator()(const Point & P)const{
+            return P.X + (int64_t(P.Y) << 32);
+        }
+    };
+}
 template<int32_t MaxX,int32_t MaxY>
 class PointIter{
 public:
