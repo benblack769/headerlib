@@ -90,7 +90,7 @@ public:
         return Arr.size();
     }
     int PointToInt(Point P){
-        return (P.X - Corner.X) * YSize + (P.Y - Corner.Y);
+        return (P.Y - Corner.Y) * XSize + (P.X - Corner.X);
     }
     iterator begin(){
         return RA_Iterator<ArrayType>(this);
