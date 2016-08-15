@@ -69,38 +69,60 @@ namespace std{
         }
     };
 }
-template<int32_t MaxX,int32_t MaxY>
+template<typename InfoType>
+struct PointInfo{
+    Point P;
+    InfoType * Data;
+    PointInfo(){
+        P = { 0, 0 };
+        Info = NULL;
+    }
+    PointInfo(Point InP, InfoType * InInfo){
+        P = InP;
+        Data = InInfo;
+    }
+    InfoType & Info(){
+        return *Data;
+    }
+    void SetInfo(InfoType InInfo){
+        Info() = InInfo;
+    }
+};
+//this type is there to allow better safety and consistency
+//for dealing with dealing with squares
+struct ConstSquare{
+    Point Cen;
+    int Range;
+    ConstSquare():Cen(0,0),Range(0){}
+    ConstSquare(Point InCen, int InRange){
+        Cen = InCen;
+        Range = InRange;
+    }
+    //disallow assignment to help ensure constness
+    void operator =(ConstSquare Other) = delete;
+};
 class PointIter{
 public:
-    PointIter(int xstart, int ystart, int xend, int yend){
-        XCap = std::min(xend,MaxX);
-        YCap = std::min(yend,MaxY);
-
-        P.X = std::max(xstart,0);
-        P.Y = std::max(ystart,0);
-
-        YLow = P.Y;
-    }
-    PointIter(Point Center, int Range):
-        PointIter(Center.X - Range,
-                      Center.Y - Range,
-                      Center.X + Range + 1,
-                      Center.Y + Range + 1){}
+    PointIter(int xstart, int ystart, int xend, int yend):
+        P(xstart,ystart),
+        XCap(xend),
+        YCap(yend),
+        XLow(ystart)
+    {}
     PointIter():
-        PointIter(0,0,MaxX,MaxY){}
+        PointIter(0,0,0,0){}
 
     bool NotEnd(){
-        return P.X < XCap;
+        return P.Y < YCap;
     }
-    bool operator != (PointIter & Other){
-        return P.X < Other.XCap;
+    bool operator != (const PointIter & Other){
+        return NotEnd();
     }
-
     void operator++ (){
-        P.Y++;
-        if (P.Y >= YCap){
-            P.X++;
-            P.Y = YLow;
+        P.X++;
+        if (P.X >= XCap){
+            P.Y++;
+            P.X = XLow;
         }
     }
     Point operator * (){
@@ -108,40 +130,19 @@ public:
     }
 private:
     Point P;
-    int XCap,YCap,YLow;
+    int XCap,YCap,XLow;
 };
-
-template<int32_t MaxX,int32_t MaxY>
 class PIterContainter
 {
 public:
-    PointIter<MaxX,MaxY> EndIter,StartIter;
-    PIterContainter(Point Center, int Range){
-        EndIter = PointIter<MaxX,MaxY>(Center, Range);
-        StartIter = EndIter;
-    }
-    PIterContainter(int xstart, int ystart, int xend, int yend){
-        EndIter = PointIter<MaxX,MaxY>(xstart, ystart, xend, yend);
-        StartIter = EndIter;
-    }
-    PIterContainter(){
-        EndIter = PointIter<MaxX,MaxY>();
-        StartIter = EndIter;
-    }
-    PointIter<MaxX,MaxY> & begin(){
+    PointIter EndIter,StartIter;
+    PIterContainter(int xstart, int ystart, int xend, int yend):
+        EndIter(xstart, ystart, xend, yend),
+        StartIter(EndIter){}
+    PointIter & begin(){
         return StartIter;
     }
-    PointIter<MaxX,MaxY> & end(){
+    PointIter & end(){
         return EndIter;
     }
 };
-
-template<int32_t MaxX,int32_t MaxY>
-inline PIterContainter<MaxX,MaxY> SquareIterOver(Point Cen,int Range){
-    return PIterContainter<MaxX,MaxY>(Cen,Range);
-}
-
-template<int32_t MaxX,int32_t MaxY>
-inline PIterContainter<MaxX,MaxY> RectIterOver(int xstart,int ystart,int xend,int yend){
-    return PIterContainter<MaxX,MaxY>(xstart,ystart,xend,yend);
-}

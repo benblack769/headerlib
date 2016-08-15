@@ -31,7 +31,7 @@ public:
 	iterator end(){
 		return Arr.end();
 	}
-	ArrayType & operator [](Point & P){
+	ArrayType & operator [](Point P){
 		return Arr[P.Y*YSize + P.X];
 	}
 	ArrayType * operator[](size_t Y){
@@ -51,10 +51,10 @@ public:
 	FArray2d(size_t InWidth,size_t InHeight,ArrayType InitVal):
 		Arr(InWidth*InHeight,InitVal),
 		Height(InHeight){}
-	
+
 	FArray2d(ArrayType InitVal):
 		FArray2d(0,0,InitVal()){}
-	  
+
 	size_t size(){
 		return Arr.size();
 	}
