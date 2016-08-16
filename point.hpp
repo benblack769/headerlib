@@ -107,7 +107,7 @@ public:
         P(xstart,ystart),
         XCap(xend),
         YCap(yend),
-        XLow(ystart)
+        XLow(xstart)
     {}
     PointIter():
         PointIter(0,0,0,0){}
