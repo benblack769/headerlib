@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <initializer_list>
 #include <stdexcept>
-#include "point.hpp"
+#include <headerlib/point.hpp>
 
 template<typename Ty>
 class DArraySlice {

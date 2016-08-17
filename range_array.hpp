@@ -4,8 +4,7 @@ Two dimentional array with offset.
 Allows one to access points efficiently in a  two dimentional space with
 arbirary bounds.
 
-So you can have a space like([-10,10],[-20,0]).
-
+So you can have a space like([-10,10],[-20,0]), and easily and efficiently store data in it.
 */
 #pragma once
 #include <headerlib/point.hpp>
