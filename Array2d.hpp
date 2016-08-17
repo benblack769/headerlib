@@ -48,7 +48,7 @@ public:
 	size_t Height;
 	typedef typename ArrTy::iterator iterator;
 	//static version
-	FArray2d(size_t InWidth,size_t InHeight,ArrayType InitVal):
+	FArray2d(size_t InWidth,size_t InHeight,ArrayType InitVal=ArrayType()):
 		Arr(InWidth*InHeight,InitVal),
 		Height(InHeight){}
 

@@ -8,7 +8,8 @@ So you can have a space like([-10,10],[-20,0]), and easily and efficiently store
 */
 #pragma once
 #include <headerlib/point.hpp>
-#include <headerlib/range_array.hpp>
+#include <vector>
+#include <exception>
 
 template<typename ArrayType>
 class RangeArray;
@@ -17,7 +18,7 @@ template<typename ArrayType>
 class RA_Iterator{
 public:
     PointIter Spot;
-    using ArrIterator = typename vector<ArrayType>::iterator;
+    using ArrIterator = typename std::vector<ArrayType>::iterator;
     ArrIterator ArrIt;
     RA_Iterator(RangeArray<ArrayType> * InArr){
         ArrIt = InArr->Arr.begin();
@@ -46,23 +47,18 @@ template<typename ArrayType>
 class RangeArray
 {
 public:
-    vector<ArrayType> Arr;
+    std::vector<ArrayType> Arr;
     using iterator = RA_Iterator<ArrayType>;
     Point Corner;
     int YSize, XSize;
-    RangeArray(Point InCenP,int InRange){
-        Corner.X = max(InCenP.X - InRange, 0);
-        Corner.Y = max(InCenP.Y - InRange, 0);
-
-        XSize = min(InCenP.X + InRange + 1, BoardSizeX) - Corner.X;
-        YSize = min(InCenP.Y + InRange + 1, BoardSizeY) - Corner.Y;
-
-        Arr.resize(XSize * YSize);
-        Init(ArrayType());//zeros out data
-    }
-    RangeArray(ConstSquare Sq) :RangeArray(Sq.Cen, Sq.Range){}
+    RangeArray(Point offset,int xsize,int ysize):
+        Arr(xsize*ysize,ArrayType()),
+        Corner(offset),
+        YSize(ysize),
+        XSize(xsize){}
+    
     RangeArray(){
-        Corner = CreatePoint(0, 0);
+        Corner = Point(0, 0);
         YSize = 0;
         XSize = 0;
     }
@@ -86,7 +82,7 @@ public:
             Val = InitVal;
     }
     int Size(){
-        return Arr.size();
+        return XSize*YSize;
     }
     int PointToInt(Point P){
         return (P.Y - Corner.Y) * XSize + (P.X - Corner.X);
@@ -102,9 +98,16 @@ public:
         int Yadj = P.Y - Corner.Y;
         return Xadj < XSize && Yadj < YSize && Xadj >= 0 && Yadj >= 0;
     }
-    ArrayType & operator [](Point & P){
+    ArrayType & operator [](Point P){
         return Arr[PointToInt(P)];
     }
+    ArrayType & at(Point P){
+        if(!IsInScope(P)){
+            throw std::runtime_error("not in RangeArray scope");
+        }
+        return (*this)[P];
+    }
+
 protected:
     void _copy_scalars(const RangeArray & other){
         Corner = other.Corner;
