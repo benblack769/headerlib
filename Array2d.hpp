@@ -52,8 +52,8 @@ public:
 		Arr(InWidth*InHeight,InitVal),
 		Height(InHeight){}
 
-	FArray2d(ArrayType InitVal):
-		FArray2d(0,0,InitVal()){}
+	FArray2d(ArrayType InitVal=ArrayType()):
+		FArray2d(0,0,InitVal){}
 
 	size_t size(){
 		return Arr.size();

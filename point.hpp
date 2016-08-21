@@ -75,7 +75,7 @@ struct PointInfo{
     InfoType * Data;
     PointInfo(){
         P = { 0, 0 };
-        Info = NULL;
+        Data = NULL;
     }
     PointInfo(Point InP, InfoType * InInfo){
         P = InP;
@@ -115,7 +115,7 @@ public:
     bool NotEnd(){
         return P.Y < YCap;
     }
-    bool operator != (const PointIter & Other){
+    bool operator != (const PointIter & ){
         return NotEnd();
     }
     void operator++ (){
