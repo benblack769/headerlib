@@ -17,7 +17,7 @@ public:
 			vec[g] = vec_ty(src + g * vec_size);
 	}
     fvec() = default;
-	
+
 	size_t size(){
 		return v_size * vec_ty().size();
 	}
@@ -124,7 +124,7 @@ class fvec8
 {
 public:
 	typedef float num_ty;
-	
+
     explicit fvec8(float A,float B,float C,float D,float E,float F,float G,float H){
 		d = _mm256_set_ps(A,B,C,D,E,F,G,H);
     }
@@ -215,7 +215,7 @@ class fvec4
 {
 public:
 	typedef float num_ty;
-	
+
     explicit fvec4(float a,float b,float c,float d){
         this->d = _mm_set_ps(a,b,c,d);
     }
@@ -295,7 +295,7 @@ fvec4 fma (const fvec4 & x,const fvec4 & y,const fvec4 & z){
 #ifdef __FMA__
 	return _mm_fmadd_ps(x.d,y.d,z.d);
 #else
-	return _mm_add_ps(__mm_mul_ps(x.d,y.d),z.d);
+	return _mm_add_ps(_mm_mul_ps(x.d,y.d),z.d);
 #endif
 }
 
@@ -304,7 +304,7 @@ class dvec4
 {
 public:
 	typedef double num_ty;
-	
+
     explicit dvec4(double A,double B,double C,double D){
 		d = _mm256_set_pd(A,B,C,D);
     }
@@ -393,7 +393,7 @@ class dvec2
 {
 public:
 	typedef double num_ty;
-	
+
     explicit dvec2(double a,double b){
         this->d = _mm_set_pd(a,b);
     }
@@ -471,8 +471,6 @@ dvec2 fma (const dvec2 & x,const dvec2 & y,const dvec2 & z){
 #ifdef __FMA__
 	return _mm_fmadd_pd(x.d,y.d,z.d);
 #else
-	return _mm_add_pd(__mm_mul_pd(x.d,y.d),z.d);
+	return _mm_add_pd(_mm_mul_pd(x.d,y.d),z.d);
 #endif
 }
-
-
