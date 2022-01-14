@@ -3,12 +3,15 @@
 #include <fstream>
 #include <vector>
 #include <cassert>
+#include <memory>
+
+#define CL_TARGET_OPENCL_VERSION 120
 
 //#include <cl.hpp>
 #include <CL/cl.h>
 //#include <CL/cl_platform.h>
 
-std::string get_error_string(cl_int err){
+inline std::string get_error_string(cl_int err){
      switch(err){
          case 0: return "CL_SUCCESS";
          case -1: return "CL_DEVICE_NOT_FOUND";
@@ -58,10 +61,10 @@ std::string get_error_string(cl_int err){
          case -61: return "CL_INVALID_BUFFER_SIZE";
          case -62: return "CL_INVALID_MIP_LEVEL";
          case -63: return "CL_INVALID_GLOBAL_WORK_SIZE";
-         default: return "Unknown OpenCL error";
      }
+    return "Unknown OpenCL error";
  }
-void CheckErrorAt(cl_int err,const char * source_info){
+inline void CheckErrorAt(cl_int err,const char * source_info){
     if (err){
         std::cout << "Error: at " << source_info << ":\n" << get_error_string(err) << std::endl;
         exit(err);
@@ -71,10 +74,24 @@ void CheckErrorAt(cl_int err,const char * source_info){
 #define CONST_STR(x) STR_HELPER(x)
 #define CheckError(err) {CheckErrorAt(err,("File: " __FILE__ ", Line: " CONST_STR(__LINE__)));}
 
+class CLKernelArg{
+    public:
+    CLKernelArg(size_t in_size, char * in_ptr):
+        size(in_size),
+        ptr(in_ptr){
+    }
+    size_t size;
+    std::shared_ptr<char> ptr;
+};
+template<class baseval>
+inline CLKernelArg make_arg(baseval val){
+    baseval * ptr = new baseval(val);
+    return CLKernelArg(sizeof(val), (char*)ptr);
+}
 template<typename item_ty>
 class CLBuffer{
 protected:
-    int bufsize;
+    size_t bufsize;
     cl_mem buf;
     cl_context mycontext;
     cl_command_queue myqueue;
@@ -91,26 +108,37 @@ public:
 
     void write_buffer(std::vector<item_ty>& data){
         assert(data.size() == bufsize);
+        write_buffer(&data[0], data.size());
+    }
+    void write_buffer(item_ty * ptr, size_t size){
+        assert(size <= bufsize);
         CheckError(clEnqueueWriteBuffer(myqueue,
                              buf,
                              CL_TRUE,
-                             0,bufsize*sizeof(item_ty),
-                             data.data(),
+                             0,size*sizeof(item_ty),
+                             ptr,
                              0,nullptr,
                              nullptr));
+        CheckError(clEnqueueBarrier(myqueue));
     }
     void read_buffer(std::vector<item_ty> & read_into){
         assert(read_into.size() == bufsize);
+        read_buffer(&read_into[0], read_into.size());
+    }
+    void read_buffer(item_ty * ptr, size_t size){
+        assert(size <= bufsize);
+        CheckError(clEnqueueBarrier(myqueue));
         CheckError(clEnqueueReadBuffer(myqueue,
                              buf,
                              CL_TRUE,
-                             0,bufsize*sizeof(item_ty),
-                             read_into.data(),
+                             0,size*sizeof(item_ty),
+                             ptr,
                              0,nullptr,
                              nullptr));
+        CheckError(clEnqueueBarrier(myqueue));
     }
-    cl_mem k_arg(){
-        return buf;
+    CLKernelArg k_arg(){
+        return make_arg(buf);
     }
     size_t bytes(){
         return bufsize * sizeof(item_ty);
@@ -126,6 +154,20 @@ public:
                             bytes(),
                             0,nullptr,
                             nullptr));
+    }
+    void clear_buffer(){
+        int zero = 0;
+        CheckError(clEnqueueFillBuffer(
+            myqueue,
+            buf,
+            &zero,
+            1,
+            0,
+            bufsize*sizeof(item_ty),
+            0,nullptr,
+            nullptr
+        ));
+        CheckError(clEnqueueBarrier(myqueue));
     }
 };
 class CL_NDRange{
@@ -171,7 +213,7 @@ public:
         return ndim;
     }
 };
-CL_NDRange div_nd(CL_NDRange range,CL_NDRange divisor){
+inline CL_NDRange div_nd(CL_NDRange range,CL_NDRange divisor){
     size_t * arr = range.array_view();
     size_t * div = divisor.array_view();
     for(int i = 0; i < 3; i++){
@@ -188,7 +230,7 @@ protected:
     CL_NDRange group_range;
     CL_NDRange exec_range;
 public:
-    CLKernel(cl_program in_prog,cl_command_queue in_queue,const char * kern_name,CL_NDRange in_run_range,CL_NDRange in_group_range,CL_NDRange in_exec_range,std::vector<cl_mem> args){
+    CLKernel(cl_program in_prog,cl_command_queue in_queue,const char * kern_name,CL_NDRange in_run_range,CL_NDRange in_group_range,CL_NDRange in_exec_range,std::vector<CLKernelArg> args){
         myqueue = in_queue;
         program = in_prog;
         run_range = in_run_range;
@@ -204,8 +246,8 @@ public:
 
         int idx = 0;
         using namespace std;
-        for(cl_mem b_info: args){
-            CheckError(clSetKernelArg(kern,idx,sizeof(b_info),&b_info));
+        for(CLKernelArg & b_info: args){
+            CheckError(clSetKernelArg(kern,idx,b_info.size,b_info.ptr.get()));
             idx++;
         }
     }
@@ -214,9 +256,9 @@ public:
         int dim = exec_range.dim();
         CL_NDRange exec_range = dim == 0 ? CL_NDRange(1,1,1) : this->exec_range;
         CL_NDRange glob_range = div_nd(this->run_range,exec_range);
-        for(int x = 0; x < exec_range.x; x++){
-            for(int y = 0; y < exec_range.y; y++){
-                for(int z = 0; z < exec_range.z; z++){
+        for(size_t x = 0; x < exec_range.x; x++){
+            for(size_t y = 0; y < exec_range.y; y++){
+                for(size_t z = 0; z < exec_range.z; z++){
                     CL_NDRange global_offset(x*glob_range.x,y*glob_range.y,z*glob_range.z);
                     CheckError(clEnqueueNDRangeKernel(
                                    myqueue,
@@ -235,36 +277,27 @@ public:
 };
 
 
-class OpenCLExecutor{
-protected:
-    std::string source_path;
+class OpenCLPlatform{
+    protected:
     cl_platform_id platform;
-    cl_device_id device;
-    cl_context context;
-    cl_program program;
-    cl_command_queue queue;
-public:
+    std::vector<cl_device_id> deviceIds;
+    public:
 
-    OpenCLExecutor(std::string in_source_path)
-    {
-        source_path = in_source_path;
-        build_program();
-        std::cout << "finished building program" << std::endl;
+    OpenCLPlatform(){
+        get_main_device();
     }
-    ~OpenCLExecutor(){
-        clReleaseProgram(program);
-        clReleaseContext(context);
-        clReleaseCommandQueue(queue);
+    cl_platform_id get_platform(){
+        return platform;
     }
-    template<typename item_ty>
-    CLBuffer<item_ty> new_clbuffer(size_t size){
-        return CLBuffer<item_ty>(context,queue,size);
+    size_t num_cl_devices(){
+        return deviceIds.size();
     }
-    CLKernel new_clkernel(const char * kern_name,CL_NDRange run_range,CL_NDRange in_group_range,CL_NDRange in_exec_range,std::vector<cl_mem> buflist){
-        return CLKernel(program,queue,kern_name,run_range,in_group_range,in_exec_range,buflist);
+    cl_device_id get_first_device(){
+        return deviceIds.at(0);
     }
-
-protected:
+    std::vector<cl_device_id> get_device_ids(){
+        return deviceIds;
+    }
     void get_main_device(){
         // http://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clGetPlatformIDs.html
         cl_uint platformIdCount = 0;
@@ -296,20 +329,61 @@ protected:
             std::cout << "Found " << deviceIdCount << " device(s)" << std::endl;
         }
 
-        std::vector<cl_device_id> deviceIds (deviceIdCount);
+        deviceIds.resize(deviceIdCount);
         clGetDeviceIDs (platformIds [0], CL_DEVICE_TYPE_ALL, deviceIdCount,
             deviceIds.data (), nullptr);
 
-        for (cl_uint i = 0; i < deviceIdCount; ++i) {
-            std::cout << "\t (" << (i+1) << ") : " << GetDeviceName (deviceIds [i]) << std::endl;
-        }
-
         std::cout << "Using platform: "<< GetPlatformName (platformIds [0])<<"\n";
-        std::cout << "Using device: "<< GetDeviceName (deviceIds [0])<<"\n";
-
         this->platform = platformIds [0];
-        this->device = deviceIds[0];
     }
+    
+     std::string GetPlatformName (cl_platform_id id)
+     {
+         size_t size = 0;
+         clGetPlatformInfo (id, CL_PLATFORM_NAME, 0, nullptr, &size);
+
+         std::string result;
+         result.resize (size);
+         clGetPlatformInfo (id, CL_PLATFORM_NAME, size,
+             const_cast<char*> (result.data ()), nullptr);
+
+         return result;
+     }
+};
+
+
+class OpenCLExecutor{
+protected:
+    std::string source_path;
+    cl_platform_id platform;
+    cl_device_id device;
+    cl_context context;
+    cl_program program;
+    cl_command_queue queue;
+public:
+
+    OpenCLExecutor(std::string in_source_path, cl_platform_id platid, cl_device_id devid)
+    {
+        device = devid;
+        platform = platid;
+        source_path = in_source_path;
+        build_program();
+        std::cout << "finished building program" << std::endl;
+    }
+    ~OpenCLExecutor(){
+        clReleaseProgram(program);
+        clReleaseContext(context);
+        clReleaseCommandQueue(queue);
+    }
+    template<typename item_ty>
+    CLBuffer<item_ty> new_clbuffer(size_t size){
+        return CLBuffer<item_ty>(context,queue,size);
+    }
+    CLKernel new_clkernel(const char * kern_name,CL_NDRange run_range,CL_NDRange in_group_range,CL_NDRange in_exec_range,std::vector<CLKernelArg> buflist){
+        return CLKernel(program,queue,kern_name,run_range,in_group_range,in_exec_range,buflist);
+    }
+
+protected:
     void create_context(){
         // http://www.khronos.org/registry/cl/sdk/1.1/docs/man/xhtml/clCreateContext.html
         const cl_context_properties contextProperties [] =
@@ -333,7 +407,6 @@ protected:
         CheckError (error);
     }
     void build_program(){
-        get_main_device();
         create_context();
         create_queue();
         CreateProgram();
@@ -368,7 +441,6 @@ protected:
 
         if(build_error == CL_BUILD_PROGRAM_FAILURE){
             size_t len = 0;
-            cl_int ret = CL_SUCCESS;
             CheckError(clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, 0, NULL, &len));
             std::vector<char> data(len);
             CheckError(clGetProgramBuildInfo(program, device, CL_PROGRAM_BUILD_LOG, len, data.data(), NULL));
@@ -380,19 +452,6 @@ protected:
         }
         //ret = clGetProgramBuildInfo(program, device_id, CL_PROGRAM_BUILD_LOG, 0, NULL, &len);
     }
-
-     std::string GetPlatformName (cl_platform_id id)
-     {
-         size_t size = 0;
-         clGetPlatformInfo (id, CL_PLATFORM_NAME, 0, nullptr, &size);
-
-         std::string result;
-         result.resize (size);
-         clGetPlatformInfo (id, CL_PLATFORM_NAME, size,
-             const_cast<char*> (result.data ()), nullptr);
-
-         return result;
-     }
 
      std::string GetDeviceName (cl_device_id id)
      {
